@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>財務指標グラフ</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<h2>ROE推移</h2>
+<canvas id="roeChart"></canvas>
+
+<h2>負債比率推移</h2>
+<canvas id="debtChart"></canvas>
+
+<script>
+const rows = {{ rows|tojson }};
+
+const labels = rows.map(r => r.year + "年 " + r.company);
+
+const roeData = rows.map(r => r.roe);
+const debtData = rows.map(r => r.debt_ratio);
+
+new Chart(document.getElementById("roeChart"), {
+    type: "line",
+    data: {
+        labels: labels,
+        datasets: [{
+            label: "ROE",
+            data: roeData,
+            borderColor: "blue",
+            fill: false
+        }]
+    }
+});
+
+new Chart(document.getElementById("debtChart"), {
+    type: "bar",
+    data: {
+        labels: labels,
+        datasets: [{
+            label: "負債比率",
+            data: debtData,
+            backgroundColor: "orange"
+        }]
+    }
+});
+</script>
+</body>
+</html>
