@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body class="auth-body">
+
+<div class="auth-container">
+    <h1>ログイン</h1>
+
+    {% if message %}
+        <div class="flash success">{{ message }}</div>
+    {% endif %}
+    {% if error %}
+        <div class="flash error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" class="auth-form">
+        <label>ユーザー名</label>
+        <input name="username" required>
+
+        <label>パスワード</label>
+        <input type="password" name="password" required>
+
+        <button type="submit">ログイン</button>
+    </form>
+
+    <p class="muted">
+        アカウントをお持ちでない方は
+        <a href="{{ url_for('register') }}">新規登録</a>
+    </p>
+</div>
+
+</body>
+</html>

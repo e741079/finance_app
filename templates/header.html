@@ -1,0 +1,16 @@
+<header class="app-header">
+    <div class="nav-left">
+        <a href="{{ url_for('index') }}">データ入力</a>
+        <a href="{{ url_for('view_data') }}">データ一覧</a>
+    </div>
+
+    <div class="nav-right">
+        {% if session.get("user_id") %}
+            <span class="user-name">{{ session.get("user_id") }} さん</span>
+            <a class="logout" href="{{ url_for('logout') }}">ログアウト</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">ログイン</a>
+        {% endif %}
+    </div>
+</header>
+<hr>

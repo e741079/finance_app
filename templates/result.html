@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+{% include "header.html" %}
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>財務指標の結果</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<h1>{{ company }} の財務指標結果</h1>
+
+<div style="max-width:700px;margin:0 auto;">
+
+<table>
+    <thead>
+        <tr>
+            <th>指標名</th>
+            <th>数値</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for name, value in indicators.items() %}
+        <tr>
+            <td>{{ name }}</td>
+            <td>{{ "{:,}".format(value) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div style="margin-top:30px;text-align:center;">
+    <a href="{{ url_for('index') }}" class="btn">← 入力に戻る</a>
+    &nbsp;&nbsp;
+    <a href="{{ url_for('view_data') }}" class="btn">データ一覧へ</a>
+</div>
+
+</div>
+
+</body>
+</html>

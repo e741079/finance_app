@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {% include "header.html" %}
+    <meta charset="UTF-8">
+    <title>データ編集</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<h1>財務データ編集</h1>
+
+<form method="POST">
+<table class="edit-table">
+<tr><th>企業名</th><td><input name="company_name" value="{{ data[1] }}" required></td></tr>
+<tr><th>業種</th><td><input name="industry" value="{{ data[2] }}" required></td></tr>
+<tr><th>年度</th><td><input name="year" value="{{ data[3] }}" required></td></tr>
+<tr><th>売上高</th><td><input name="sales" value="{{ data[4] }}" required></td></tr>
+<tr><th>売上総利益</th><td><input name="gross_profit" value="{{ data[5] }}" required></td></tr>
+<tr><th>当期純利益</th><td><input name="net_income" value="{{ data[6] }}" required></td></tr>
+<tr><th>総資産</th><td><input name="total_assets" value="{{ data[7] }}" required></td></tr>
+<tr><th>自己資本</th><td><input name="equity" value="{{ data[8] }}" required></td></tr>
+<tr><th>流動資産</th><td><input name="current_assets" value="{{ data[9] }}" required></td></tr>
+<tr><th>流動負債</th><td><input name="current_liabilities" value="{{ data[10] }}" required></td></tr>
+<tr><th>総負債</th><td><input name="liabilities" value="{{ data[11] }}" required></td></tr>
+<tr><th>従業員数</th><td><input name="employees" value="{{ data[12] }}" required></td></tr>
+</table>
+<button type="submit">更新</button>
+</form>
+
+<hr>
+
+<h2>コメント</h2>
+
+<form method="POST" action="{{ url_for('add_comment', id=data[0]) }}">
+<textarea name="content" placeholder="新しいコメントを入力" required></textarea>
+<button>追加</button>
+</form>
+
+{% if comments %}
+    {% for c in comments %}
+    <div class="comment-box">
+        <form method="POST" action="{{ url_for('edit_comment', id=c[0]) }}">
+            <textarea name="content">{{ c[3] }}</textarea>
+            <button>保存</button>
+        </form>
+
+        <form method="POST" action="{{ url_for('delete_comment', id=c[0]) }}">
+            <button class="danger">削除</button>
+        </form>
+    </div>
+    {% endfor %}
+{% else %}
+    <p class="muted">コメントはまだありません。</p>
+{% endif %}
+
+</body>
+</html>
