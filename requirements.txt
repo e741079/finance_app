@@ -1,4 +1,5 @@
-Flask
-Flask-Login
+flask
+flask-login
+pandas
 openpyxl
 gunicorn
