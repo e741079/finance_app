@@ -32,6 +32,15 @@ canvas{max-width:100%;}
 <script>
 const raw = {{ rows|tojson }};
 
+// 年度を数値に変換
+raw.forEach(r=>{
+ r.year = Number(r.year);
+ r.sales = Number(r.sales);
+ r.roe = Number(r.roe);
+ r.productivity = Number(r.productivity);
+});
+
+// 企業一覧
 const companies=[...new Set(raw.map(r=>r.company_name))];
 const companySel=document.getElementById("companySelect");
 companies.forEach(c=>{
@@ -45,7 +54,11 @@ let chart;
 function draw(){
  const company=companySel.value;
  const metric=document.getElementById("metricSelect").value;
- const data=raw.filter(r=>r.company_name==company);
+
+ // 企業で抽出 → 年度順に並び替え
+ const data=raw
+   .filter(r=>r.company_name===company)
+   .sort((a,b)=>a.year-b.year);
 
  const labels=data.map(r=>r.year);
  const values=data.map(r=>r[metric]);
@@ -53,7 +66,17 @@ function draw(){
  if(chart) chart.destroy();
  chart=new Chart(document.getElementById("chart"),{
   type:"bar",
-  data:{labels,datasets:[{label:metric,data:values}]}
+  data:{
+    labels:labels,
+    datasets:[{
+      label: metric,
+      data: values
+    }]
+  },
+  options:{
+    responsive:true,
+    scales:{ y:{ beginAtZero:true } }
+  }
  });
 }
 
@@ -61,6 +84,5 @@ companySel.onchange=draw;
 document.getElementById("metricSelect").onchange=draw;
 draw();
 </script>
-
 </body>
 </html>
