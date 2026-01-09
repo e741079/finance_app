@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>財務データグラフ</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:"Noto Sans JP";background:#f7f7f7;padding:30px;}
+.card{background:#fff;padding:20px;border-radius:12px;box-shadow:0 5px 15px rgba(0,0,0,.1);}
+select{padding:6px 12px;border-radius:6px;}
+canvas{max-width:100%;}
+</style>
+</head>
+<body>
+
+<h2>財務データ可視化</h2>
+
+<div class="card">
+企業：
+<select id="companySelect"></select>
+
+指標：
+<select id="metricSelect">
+<option value="sales">売上高</option>
+<option value="roe">ROE</option>
+<option value="productivity">労働生産性</option>
+</select>
+
+<canvas id="chart"></canvas>
+</div>
+
+<script>
+const raw = {{ rows|tojson }};
+
+const companies=[...new Set(raw.map(r=>r.company_name))];
+const companySel=document.getElementById("companySelect");
+companies.forEach(c=>{
+ let o=document.createElement("option");
+ o.value=o.textContent=c;
+ companySel.appendChild(o);
+});
+
+let chart;
+
+function draw(){
+ const company=companySel.value;
+ const metric=document.getElementById("metricSelect").value;
+ const data=raw.filter(r=>r.company_name==company);
+
+ const labels=data.map(r=>r.year);
+ const values=data.map(r=>r[metric]);
+
+ if(chart) chart.destroy();
+ chart=new Chart(document.getElementById("chart"),{
+  type:"bar",
+  data:{labels,datasets:[{label:metric,data:values}]}
+ });
+}
+
+companySel.onchange=draw;
+document.getElementById("metricSelect").onchange=draw;
+draw();
+</script>
+
+</body>
+</html>
