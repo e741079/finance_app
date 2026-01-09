@@ -216,18 +216,22 @@ def graph_view():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    con = connect()
-    cur = con.cursor()
-    cur.execute("""
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    c.execute("""
         SELECT company_name, year, sales, roe, productivity
         FROM financials
         WHERE user_id=?
-        ORDER BY year
+        ORDER BY company_name, year
     """, (session["user_id"],))
-    rows = cur.fetchall()
-    con.close()
+
+    rows = [dict(r) for r in c.fetchall()]
+    conn.close()
 
     return render_template("graph.html", rows=rows)
+
 
 
 if __name__=="__main__":
