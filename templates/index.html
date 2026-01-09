@@ -27,15 +27,13 @@
         <datalist id="company_suggestions"></datalist>
     </div>
 
-    <!-- 業種 -->
-    <div class="form-row">
-        <label>業種</label>
-        <select name="industry" id="industry" onchange="toggleOtherIndustry(this)" required>
-            {% for industry in industries %}
-            <option value="{{ industry }}">{{ industry }}</option>
-            {% endfor %}
-        </select>
-    </div>
+<!-- 業種 -->
+<div class="form-row">
+  <label>業種</label>
+  <input name="industry" id="industryInput" list="industryList" required>
+  <datalist id="industryList"></datalist>
+</div>
+
 
     <div id="other_industry_input" class="form-row" style="display:none;">
         <label>その他の業種</label>

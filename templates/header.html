@@ -14,3 +14,17 @@
     </div>
 </header>
 <hr>
+
+<script>
+fetch("/industry_list")
+ .then(r=>r.json())
+ .then(list=>{
+   const dl=document.getElementById("industryList");
+   if(!dl) return;
+   list.forEach(v=>{
+     const o=document.createElement("option");
+     o.value=v;
+     dl.appendChild(o);
+   });
+ });
+</script>

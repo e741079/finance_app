@@ -115,6 +115,16 @@ def index():
 
     return render_template("index.html", current_year=current_year)
 
+# ---------------- list ----------------
+@app.route("/industry_list")
+def industry_list():
+    con = connect()
+    cur = con.cursor()
+    cur.execute("SELECT DISTINCT industry FROM financials WHERE user_id=?", (session.get("user_id"),))
+    data=[r[0] for r in cur.fetchall()]
+    con.close()
+    return data
+
 # ---------------- View ----------------
 @app.route("/view_data")
 def view_data():
@@ -196,19 +206,37 @@ def delete_comment(id):
 # ---------------- Excel ----------------
 @app.route("/download_excel")
 def download_excel():
-    con=connect();cur=con.cursor()
-    cur.execute("""
-    SELECT f.*, GROUP_CONCAT(c.content,' / ') AS comments
-    FROM financials f LEFT JOIN comments c ON f.id=c.financial_id
-    WHERE f.user_id=? GROUP BY f.id""",(session["user_id"],))
-    rows=cur.fetchall(); con.close()
+    if "user_id" not in session:
+        return redirect(url_for("login"))
 
-    df=pd.DataFrame(rows)
-    df=df.drop(columns=["id","user_id"])
-    out=io.BytesIO()
-    df.to_excel(out,index=False)
+    con = connect()
+    cur = con.cursor()
+
+    cur.execute("""
+        SELECT f.*,
+               GROUP_CONCAT(comments.content, ' / ') AS comments
+        FROM financials AS f
+        LEFT JOIN comments
+               ON f.id = comments.financial_id
+              AND comments.user_id = ?
+        WHERE f.user_id = ?
+        GROUP BY f.id
+    """, (session["user_id"], session["user_id"]))
+
+    rows = cur.fetchall()
+    con.close()
+
+    df = pd.DataFrame([dict(r) for r in rows])
+    df = df.drop(columns=["id", "user_id"], errors="ignore")
+
+    out = io.BytesIO()
+    df.to_excel(out, index=False)
     out.seek(0)
-    return send_file(out,download_name="financial_data.xlsx",as_attachment=True)
+
+    return send_file(out,
+                     download_name="financial_data.xlsx",
+                     as_attachment=True)
+
 
 # ---------------- graph ----------------
 @app.route("/graph")
