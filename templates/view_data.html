@@ -30,7 +30,9 @@
     企業名 <input name="company_name" value="{{ company_name }}">
     業種 <input name="industry" value="{{ industry }}">
     <button>検索</button>
-    <a href="{{ url_for('download_excel') }}">Excel</a>
+    <a href="{{ url_for('download_excel') }}">Excel出力</a>
+    <a href="{{ url_for('graph_view') }}" class="graph-btn">📊 グラフで比較</a>
+
 </form>
 
 <div style="overflow-x:auto;">

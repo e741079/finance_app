@@ -210,26 +210,24 @@ def download_excel():
     out.seek(0)
     return send_file(out,download_name="financial_data.xlsx",as_attachment=True)
 
-# ---------------- chart ----------------
-@app.route("/chart")
-def chart():
+# ---------------- graph ----------------
+@app.route("/graph")
+def graph_view():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
-
+    con = connect()
+    cur = con.cursor()
     cur.execute("""
-        SELECT company, year, roe, debt_ratio
-        FROM financial_data
-        WHERE user_id = ?
+        SELECT company_name, year, sales, roe, productivity
+        FROM financials
+        WHERE user_id=?
         ORDER BY year
     """, (session["user_id"],))
     rows = cur.fetchall()
-    conn.close()
+    con.close()
 
-    return render_template("chart.html", rows=rows)
+    return render_template("graph.html", rows=rows)
 
 
 if __name__=="__main__":

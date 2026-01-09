@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>財務グラフ比較</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<h2>財務指標の比較</h2>
+
+<select id="metric">
+  <option value="sales">売上高</option>
+  <option value="roe">ROE</option>
+  <option value="labor_productivity">労働生産性</option>
+</select>
+
+<canvas id="chart"></canvas>
+
+<script>
+const raw = {{ rows|tojson }};
+let chart;
+
+function draw(){
+ const m = document.getElementById("metric").value;
+ const labels = raw.map(r=>r[0]+"("+r[1]+")");
+ const data = raw.map(r=>r[m==="sales"?2:m==="roe"?3:4]);
+ if(chart) chart.destroy();
+ chart = new Chart(document.getElementById("chart"),{
+   type:"bar",
+   data:{labels:labels,datasets:[{label:m,data:data}]}
+ });
+}
+draw();
+document.getElementById("metric").onchange=draw;
+</script>
+
+</body>
+</html>
