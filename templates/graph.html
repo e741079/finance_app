@@ -1,50 +1,51 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+  {% include "header.html" %}
   <meta charset="UTF-8">
   <title>財務データグラフ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-  {% include "header.html" %}
+<div class="container">
+  <h2>財務データ可視化</h2>
 
-  <div class="container">
-    <h2>財務データ可視化</h2>
-
-    <div class="card">
-      <div class="filter-grid">
-        <div class="form-row">
-          <label>企業</label>
-          <select id="companySelect"></select>
-        </div>
-
-        <div class="form-row">
-          <label>指標</label>
-          <select id="metricSelect">
-            <option value="sales">売上高</option>
-            <option value="roe">ROE</option>
-            <option value="productivity">労働生産性</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- グラフ背景（真っ白回避） -->
-      <div class="chart-card">
-        <canvas id="chart"></canvas>
-      </div>
+  <div class="section-box">
+    <div class="actions-row">
+      <a class="btn" href="{{ url_for('view_data') }}">データ一覧へ</a>
+      <a class="btn" href="{{ url_for('index') }}">入力へ</a>
     </div>
   </div>
+
+  <div class="card">
+    <div class="section-box">
+      <div class="form-row">
+        <label>企業</label>
+        <select id="companySelect"></select>
+      </div>
+
+      <div class="form-row">
+        <label>指標</label>
+        <select id="metricSelect">
+          <option value="sales">売上高</option>
+          <option value="roe">ROE</option>
+          <option value="productivity">労働生産性</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <canvas id="chart"></canvas>
+    </div>
+  </div>
+</div>
 
 <script>
 const raw = {{ rows|tojson }};
 
-// 年度を数値に変換
 raw.forEach(r=>{
   r.year = Number(r.year);
   r.sales = Number(r.sales);
@@ -52,7 +53,6 @@ raw.forEach(r=>{
   r.productivity = Number(r.productivity);
 });
 
-// 企業一覧
 const companies=[...new Set(raw.map(r=>r.company_name))];
 const companySel=document.getElementById("companySelect");
 companies.forEach(c=>{
@@ -63,18 +63,10 @@ companies.forEach(c=>{
 
 let chart;
 
-function metricLabel(metric){
-  if(metric==="sales") return "売上高";
-  if(metric==="roe") return "ROE";
-  if(metric==="productivity") return "労働生産性";
-  return metric;
-}
-
 function draw(){
   const company=companySel.value;
   const metric=document.getElementById("metricSelect").value;
 
-  // 企業で抽出 → 年度順に並び替え
   const data=raw
     .filter(r=>r.company_name===company)
     .sort((a,b)=>a.year-b.year);
@@ -87,14 +79,10 @@ function draw(){
     type:"bar",
     data:{
       labels:labels,
-      datasets:[{
-        label: metricLabel(metric),
-        data: values
-      }]
+      datasets:[{ label: metric, data: values }]
     },
     options:{
       responsive:true,
-      maintainAspectRatio: false,
       scales:{ y:{ beginAtZero:true } }
     }
   });
@@ -102,14 +90,8 @@ function draw(){
 
 companySel.onchange=draw;
 document.getElementById("metricSelect").onchange=draw;
-
-// 初期選択
-if (companies.length > 0) {
-  companySel.value = companies[0];
-}
 draw();
 </script>
 
 </body>
 </html>
-

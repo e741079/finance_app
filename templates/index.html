@@ -4,31 +4,30 @@
   <meta charset="UTF-8">
   <title>財務データ入力</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  {% include "header.html" %}
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
-  {% include "header.html" %}
+<div class="container">
+  <h1>財務データ入力</h1>
 
-  <div class="container">
-    <h1>財務データ入力フォーム</h1>
+  <div class="actions-row">
+    <a class="btn" href="{{ url_for('view_data') }}">データ一覧へ</a>
+  </div>
 
-    <div class="page-actions">
-      <a class="btn" href="{{ url_for('view_data') }}">データ一覧ページへ</a>
-    </div>
+  <form method="POST" class="card" onsubmit="cleanFormBeforeSubmit()">
 
-    <form method="POST" class="card" onsubmit="cleanFormBeforeSubmit()">
+    <div class="section-box">
+      <h3>基本情報</h3>
 
-      <!-- 企業名（オートコンプリート） -->
       <div class="form-row">
         <label>企業名</label>
         <input id="company_name" name="company_name" list="company_suggestions" autocomplete="off" required>
         <datalist id="company_suggestions"></datalist>
       </div>
 
-      <!-- 業種 -->
       <div class="form-row">
         <label>業種</label>
         <input name="industry" id="industryInput" list="industryList" required>
@@ -40,17 +39,15 @@
         <input name="other_industry">
       </div>
 
-      <!-- 年度 -->
       <div class="form-row">
         <label>年度</label>
         <select name="year" required>
           {% for y in range(current_year, current_year - 30, -1) %}
-          <option value="{{ y }}">{{ y }}</option>
+            <option value="{{ y }}">{{ y }}</option>
           {% endfor %}
         </select>
       </div>
 
-      <!-- 単位 -->
       <div class="form-row">
         <label>入力単位</label>
         <select name="unit">
@@ -59,21 +56,27 @@
           <option value="1000000">百万円</option>
         </select>
       </div>
+    </div>
 
+    <div class="section-box">
       <h3>財務数値</h3>
 
       {% set fields = [
-        ('sales','売上高'),('gross_profit','売上総利益'),('net_income','当期純利益'),
-        ('total_assets','総資産'),('equity','自己資本'),
-        ('current_assets','流動資産'),('current_liabilities','流動負債'),
+        ('sales','売上高'),
+        ('gross_profit','売上総利益'),
+        ('net_income','当期純利益'),
+        ('total_assets','総資産'),
+        ('equity','自己資本'),
+        ('current_assets','流動資産'),
+        ('current_liabilities','流動負債'),
         ('liabilities','総負債')
       ] %}
 
       {% for name,label in fields %}
-      <div class="form-row">
-        <label>{{ label }}</label>
-        <input name="{{ name }}" class="number-input" required>
-      </div>
+        <div class="form-row">
+          <label>{{ label }}</label>
+          <input name="{{ name }}" class="number-input" inputmode="numeric" required>
+        </div>
       {% endfor %}
 
       <div class="form-row">
@@ -81,46 +84,45 @@
         <input name="employees" type="number" min="0" step="1" required>
       </div>
 
-      <button type="submit" class="btn btn-primary">保存</button>
-    </form>
-  </div>
+      <div class="actions-row">
+        <button type="submit" class="btn">保存</button>
+        <a class="btn" href="{{ url_for('view_data') }}">一覧で確認</a>
+      </div>
+    </div>
 
-  <script>
-  document.addEventListener("DOMContentLoaded",()=> {
-    const input = document.getElementById("company_name");
-    const list  = document.getElementById("company_suggestions");
+  </form>
+</div>
 
-    input.addEventListener("input",()=> {
-      fetch(`/get_companies?query=${encodeURIComponent(input.value)}`)
-        .then(r=>r.json())
-        .then(data=> {
-          list.innerHTML = "";
-          data.forEach(c=> {
-            const o = document.createElement("option");
-            o.value = c;
-            list.appendChild(o);
-          });
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  const input=document.getElementById("company_name");
+  const list=document.getElementById("company_suggestions");
+
+  input.addEventListener("input",()=>{
+    fetch(`/get_companies?query=${encodeURIComponent(input.value)}`)
+      .then(r=>r.json()).then(data=>{
+        list.innerHTML="";
+        data.forEach(c=>{
+          const o=document.createElement("option");
+          o.value=c; list.appendChild(o);
         });
-    });
-
-    document.querySelectorAll(".number-input").forEach(i=> {
-      i.addEventListener("input",()=> {
-        const v = i.value.replace(/,/g,'');
-        if(!isNaN(v) && v!=="") i.value = Number(v).toLocaleString();
       });
-    });
   });
 
-  function cleanFormBeforeSubmit(){
-    document.querySelectorAll(".number-input").forEach(i=>{
-      i.value=i.value.replace(/,/g,'');
+  document.querySelectorAll(".number-input").forEach(i=>{
+    i.addEventListener("input",()=>{
+      const v=i.value.replace(/,/g,'');
+      if(!isNaN(v)&&v!=="") i.value=Number(v).toLocaleString();
     });
-  }
-  function toggleOtherIndustry(sel){
-    document.getElementById("other_industry_input").style.display =
-      sel.value==="その他"?"block":"none";
-  }
-  </script>
+  });
+});
+
+function cleanFormBeforeSubmit(){
+  document.querySelectorAll(".number-input").forEach(i=>{
+    i.value=i.value.replace(/,/g,'');
+  });
+}
+</script>
 
 </body>
 </html>

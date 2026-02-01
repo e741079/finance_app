@@ -1,295 +1,262 @@
 :root{
-  --bg: #f5f7fb;
-  --card: #ffffff;
+  --bg:#f5f7fb;
+  --card:#ffffff;
 
-  --text: #111827;
-  --muted: #374151;
+  --text:#1f2937;
+  --muted:#374151;
 
-  --border: #e5e7eb;
+  --border:#e5e7eb;
+  --border-soft:#d1d5db;
 
-  --brand: #2f4db7;
-  --brand-dark: #263f97;
-  --brand-weak: #e9efff;
+  --brand:#2f4db7;
+  --brand-dark:#263f97;
+  --brand-weak:#e9efff;
 
-  --soft: #f7f8fa;
-  --shadow: 0 10px 25px rgba(0,0,0,.08);
+  --shadow:0 10px 25px rgba(0,0,0,.08);
 }
 
-*{ box-sizing: border-box; }
+*{ box-sizing:border-box; }
 
 body{
-  font-family: "Noto Sans JP","Segoe UI",system-ui,-apple-system,sans-serif;
-  background: var(--bg);
-  margin: 0;
-  color: var(--text);
-  line-height: 1.6;
+  font-family:"Noto Sans JP","Segoe UI",system-ui,-apple-system,sans-serif;
+  background:var(--bg);
+  margin:0;
+  color:var(--text);
+  line-height:1.6;
 }
 
-h1,h2,h3{
-  margin: 0 0 12px;
-  color: var(--text);
-}
-
+/* ===== Layout ===== */
 .container{
-  width: 92%;
-  max-width: 1100px;
-  margin: 18px auto 28px;
-  background: var(--card);
-  padding: 22px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  width:92%;
+  max-width:1100px;
+  margin:20px auto;
+  background:var(--card);
+  padding:22px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  box-shadow:var(--shadow);
 }
 
 /* ===== Header ===== */
 .app-header{
-  width: 92%;
-  max-width: 1100px;
-  margin: 18px auto 0;
-  padding: 12px 14px;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: 0 8px 18px rgba(0,0,0,.05);
-
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+  width:92%;
+  max-width:1100px;
+  margin:18px auto 0;
+  padding:12px 14px;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:14px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
 }
-
-.nav-left, .nav-right{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+.nav-left,.nav-right{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
 }
-
 .app-header a{
-  text-decoration: none;
-  color: var(--brand);
-  font-weight: 700;
-  padding: 6px 10px;
-  border-radius: 10px;
+  color:var(--brand);
+  font-weight:700;
+  padding:6px 10px;
+  text-decoration:none;
+  border-radius:10px;
 }
-
-.app-header a:hover{
-  background: var(--brand-weak);
-}
-
-.user-name{
-  color: var(--muted);
-  font-weight: 600;
-}
+.app-header a:hover{ background:var(--brand-weak); }
+.user-name{ color:var(--muted); font-weight:600; }
 
 .logout{
-  background: var(--brand);
-  color: #fff !important;
+  background:var(--brand);
+  color:#fff !important;
 }
-.logout:hover{
-  background: var(--brand-dark);
+.logout:hover{ background:var(--brand-dark); }
+
+/* ===== Buttons ===== */
+.btn,
+button,
+a.btn,
+input[type="submit"],
+input[type="button"]{
+  padding:5px 12px;
+  line-height:1.1;
+  min-height:unset;
+  border-radius:10px;
+  border:none;
+  background:var(--brand);
+  color:#fff;
+  font-weight:700;
+  cursor:pointer;
+  text-decoration:none;
+}
+.btn:hover,
+button:hover,
+a.btn:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover{
+  background:var(--brand-dark);
 }
 
-/* ===== Actions ===== */
-.page-actions{
-  margin: 12px 0 16px;
-}
-
-/* ===== Card / Form ===== */
+/* ===== Forms ===== */
 .card{
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 18px;
-  box-shadow: 0 6px 18px rgba(0,0,0,.04);
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:18px;
+  box-shadow:0 6px 18px rgba(0,0,0,.04);
 }
 
 .form-row{
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 6px;
-  margin-bottom: 12px;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:6px;
+  margin-bottom:12px;
 }
 
 label{
-  font-weight: 600;
-  color: var(--muted);
+  font-weight:700;
+  color:var(--muted);
 }
 
-input, select, textarea{
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: #fff;
-  color: var(--text);
+input,select,textarea{
+  width:100%;
+  padding:9px 12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:#fff;
+  color:var(--text);
 }
 
-textarea{ min-height: 90px; resize: vertical; }
+textarea{ min-height:90px; resize:vertical; }
 
-input:focus, select:focus, textarea:focus{
-  outline: 2px solid rgba(47,77,183,.18);
-  border-color: rgba(47,77,183,.55);
-}
-
-/* ===== Buttons ===== */
-.btn{
-  display: inline-block;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  background: var(--brand);
-  color: #fff;
-  cursor: pointer;
-  font-weight: 700;
-  text-decoration: none;
-}
-.btn:hover{ background: var(--brand-dark); }
-
-.btn-primary{
-  background: var(--brand);
-}
-.btn-primary:hover{
-  background: var(--brand-dark);
-}
-
-/* ===== Table (for view page) ===== */
-.table-wrap{
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  margin-top: 16px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: #fff;
-}
-
-table{
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 900px; /* 列が多い前提：スマホは横スクロール */
-}
-
-th,td{
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-  text-align: center;
-  white-space: nowrap;
-}
-
-th{
-  background: var(--brand);
-  color: #fff;
-  font-weight: 800;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-tbody tr:nth-child(even){
-  background: var(--soft);
-}
-
-/* ===== Comments ===== */
-.comment-box{
-  background: var(--brand-weak);
-  border: 1px solid rgba(47,77,183,.15);
-  padding: 12px;
-  border-radius: 10px;
-  margin-bottom: 10px;
-}
-
-/* ===== Chart background (for graph page) ===== */
-.chart-card{
-  background: var(--soft);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px;
-  margin-top: 16px;
-}
-.chart-card canvas{
-  display: block;
-  width: 100% !important;
-  height: auto !important;
-}
-
-/* ===== Mobile ===== */
-@media (max-width: 768px){
-  .app-header, .container{
-    width: 94%;
-  }
-  .container{
-    padding: 16px;
-    margin: 12px auto 20px;
-  }
-  .app-header{
-    padding: 10px 12px;
-  }
-  .btn{
-    width: 100%;
-    text-align: center;
-    padding: 12px 14px;
-  }
-  input, select, textarea{
-    padding: 12px;
-  }
-}
-/* view_data: フィルタUI */
-.filter-grid{
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+input:focus,select:focus,textarea:focus{
+  outline:2px solid rgba(47,77,183,.18);
+  border-color:rgba(47,77,183,.55);
 }
 
 .actions-row{
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 10px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:10px;
 }
 
-.link{
-  color: var(--brand);
-  font-weight: 700;
-  text-decoration: none;
-}
-.link:hover{
-  text-decoration: underline;
+/* ===== Table ===== */
+.table-wrap{
+  width:100%;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  margin-top:16px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#fff;
 }
 
-/* 表の色分け（元の<style>から移動） */
-.profit{ background:#e8f5e9; }
-.stable{ background:#e3f2fd; }
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:900px;
+  writing-mode:horizontal-tb;
+}
+
+thead th,
+tbody td{
+  writing-mode:horizontal-tb;
+  transform:none;
+  white-space:nowrap;
+}
+
+thead th{
+  padding:12px;
+  background:var(--brand-weak);
+  color:#1f2937;
+  font-weight:800;
+  text-align:center;
+  border-bottom:2px solid var(--border-soft);
+}
+
+tbody td{
+  padding:10px 12px;
+  text-align:center;
+  border-bottom:1px solid var(--border);
+}
+
+tbody tr:nth-child(even){
+  background:#f9fafb;
+}
+
+/* ===== 色分け（保持） ===== */
+.profit{  background:#e8f5e9; }
+.stable{  background:#e3f2fd; }
 .produce{ background:#fff3e0; }
 
-.good{ color: #15803d; font-weight: 800; }
-.warn{ color: #b45309; font-weight: 800; }
-.bad{  color: #b42318; font-weight: 800; }
-
-.comment-view{
-  font-size: 12px;
-  margin: 2px 0;
-  text-align: left;
-  white-space: normal; /* コメントは折り返す */
+/* ===== 薄い四角（文字用だけに使う） ===== */
+.box-soft{
+  background:#f8fafc;
+  border:1px solid rgba(17,24,39,.12);
+  border-radius:10px;
+  padding:10px 12px;
 }
-.comments-cell{
-  text-align: left;
-  max-width: 240px;
+.box-soft.compact{
+  padding:6px 10px;
+  border-radius:9px;
+}
+
+/* セクション枠 */
+.section-box{
+  background:#f8fafc;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px;
+  margin-bottom:14px;
 }
 
 .muted{ color:#6b7280; font-size:12px; }
 
-/* Mobile: フィルタを1列に */
-@media (max-width: 768px){
-  .filter-grid{ grid-template-columns: 1fr; }
-  .actions-row .btn{ width: 100%; }
+/* 評価 */
+.good{ color:#15803d; font-weight:800; }
+.warn{ color:#b45309; font-weight:800; }
+.bad{  color:#b42318; font-weight:800; }
+
+/* view_data: フィルタ余白 */
+form input[name="company_name"],
+form input[name="industry"]{
+  margin-bottom:10px;
 }
-/* graph page: chartの高さ（スマホでも見やすく） */
+
+/* コメント表示 */
+.comment-view{
+  font-size:12px;
+  margin:2px 0;
+  text-align:left;
+  white-space:normal;
+}
+.comments-cell{
+  text-align:left;
+  max-width:260px;
+}
+
+/* グラフ枠 */
 .chart-card{
-  height: 420px;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px;
+  height:420px;
 }
-@media (max-width: 768px){
-  .chart-card{
-    height: 320px;
+.chart-card canvas{
+  display:block;
+  width:100% !important;
+  height:auto !important;
+}
+
+@media(max-width:768px){
+  .container,.app-header{ width:94%; }
+  .container{ padding:16px; }
+  .btn,button,a.btn,input[type="submit"],input[type="button"]{
+    width:100%;
+    padding:6px 12px;
   }
+  .chart-card{ height:320px; }
 }
