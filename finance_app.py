@@ -143,65 +143,181 @@ def view_data():
 
     return render_template("view_data.html", financial_data=financials, comments_by_id=comments)
 
-# ---------------- Edit ----------------
-@app.route("/edit/<int:id>", methods=["GET","POST"])
-def edit_data(id):
-    if "user_id" not in session: return redirect(url_for("login"))
-    con=connect();cur=con.cursor()
+import re
+from flask import abort
 
-    if request.method=="POST":
-        f=request.form
-        d={k:float(f[k]) if k!="employees" else int(f[k]) for k in
-           ["sales","gross_profit","net_income","total_assets","equity",
-            "current_assets","current_liabilities","liabilities","employees"]}
+def _to_float(v: str) -> float:
+    # None対策＋全角カンマなども一応吸収
+    if v is None:
+        return 0.0
+    s = str(v).strip()
+    s = s.replace(",", "").replace("，", "").replace(" ", "")
+    if s == "":
+        return 0.0
+    return float(s)
+
+def _to_int(v: str) -> int:
+    if v is None:
+        return 0
+    s = str(v).strip()
+    s = s.replace(",", "").replace("，", "").replace(" ", "")
+    if s == "":
+        return 0
+    return int(float(s))  # "12.0" とか来ても落ちないように
+
+def _row_get(row, key, idx=None):
+    """sqlite3.Row でも tuple でも取り出せるようにする"""
+    if row is None:
+        return None
+    try:
+        return row[key]  # Rowならこれ
+    except Exception:
+        return row[idx] if idx is not None else None
+
+
+# ---------------- Edit ----------------
+@app.route("/edit/<int:id>", methods=["GET", "POST"])
+def edit_data(id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    con = connect()
+    cur = con.cursor()
+
+    # 先に存在確認（他ユーザーのidを直叩きされた時も安全）
+    cur.execute("SELECT * FROM financials WHERE id=? AND user_id=?", (id, session["user_id"]))
+    data = cur.fetchone()
+    if data is None:
+        con.close()
+        abort(404)
+
+    if request.method == "POST":
+        f = request.form
+
+        d = {
+            "sales": _to_float(f.get("sales")),
+            "gross_profit": _to_float(f.get("gross_profit")),
+            "net_income": _to_float(f.get("net_income")),
+            "total_assets": _to_float(f.get("total_assets")),
+            "equity": _to_float(f.get("equity")),
+            "current_assets": _to_float(f.get("current_assets")),
+            "current_liabilities": _to_float(f.get("current_liabilities")),
+            "liabilities": _to_float(f.get("liabilities")),
+            "employees": _to_int(f.get("employees")),
+        }
+
+        # year は数値に寄せたいなら int化（DBがTEXTでもOK）
+        year = f.get("year")
+        year = str(year).strip()
+
         d.update(calc(d))
 
-        cur.execute("""UPDATE financials SET
-        company_name=?,industry=?,year=?,sales=?,gross_profit=?,net_income=?,
-        total_assets=?,equity=?,current_assets=?,current_liabilities=?,liabilities=?,employees=?,
-        gross_profit_margin=?,roe=?,current_ratio=?,debt_ratio=?,sales_per_employee=?,productivity=?
-        WHERE id=? AND user_id=?""",
-        (f["company_name"],f["industry"],f["year"],
-         d["sales"],d["gross_profit"],d["net_income"],
-         d["total_assets"],d["equity"],d["current_assets"],d["current_liabilities"],d["liabilities"],
-         d["employees"],d["gross_profit_margin"],d["roe"],d["current_ratio"],d["debt_ratio"],
-         d["sales_per_employee"],d["productivity"],id,session["user_id"]))
+        cur.execute(
+            """UPDATE financials SET
+            company_name=?, industry=?, year=?,
+            sales=?, gross_profit=?, net_income=?,
+            total_assets=?, equity=?, current_assets=?, current_liabilities=?, liabilities=?, employees=?,
+            gross_profit_margin=?, roe=?, current_ratio=?, debt_ratio=?, sales_per_employee=?, productivity=?
+            WHERE id=? AND user_id=?""",
+            (
+                f.get("company_name"), f.get("industry"), year,
+                d["sales"], d["gross_profit"], d["net_income"],
+                d["total_assets"], d["equity"], d["current_assets"], d["current_liabilities"], d["liabilities"],
+                d["employees"],
+                d["gross_profit_margin"], d["roe"], d["current_ratio"], d["debt_ratio"],
+                d["sales_per_employee"], d["productivity"],
+                id, session["user_id"]
+            )
+        )
         con.commit()
-        return redirect(url_for("edit_data",id=id))
+        con.close()
+        return redirect(url_for("edit_data", id=id))
 
-    cur.execute("SELECT * FROM financials WHERE id=? AND user_id=?", (id,session["user_id"]))
-    data=cur.fetchone()
-    cur.execute("SELECT * FROM comments WHERE financial_id=? AND user_id=?", (id,session["user_id"]))
-    comments=cur.fetchall(); con.close()
+    # コメント取得
+    cur.execute("SELECT * FROM comments WHERE financial_id=? AND user_id=? ORDER BY id DESC", (id, session["user_id"]))
+    comments = cur.fetchall()
+    con.close()
     return render_template("edit_data.html", data=data, comments=comments)
+
 
 # ---------------- Comment ----------------
 @app.route("/add_comment/<int:id>", methods=["POST"])
 def add_comment(id):
-    con=connect();cur=con.cursor()
-    cur.execute("INSERT INTO comments(financial_id,user_id,content) VALUES(?,?,?)",
-                (id,session["user_id"],request.form["content"]))
-    con.commit();con.close()
-    return redirect(url_for("edit_data",id=id))
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    con = connect()
+    cur = con.cursor()
+
+    # そのfinancialが本人のものか確認（安全）
+    cur.execute("SELECT id FROM financials WHERE id=? AND user_id=?", (id, session["user_id"]))
+    if cur.fetchone() is None:
+        con.close()
+        abort(404)
+
+    content = request.form.get("content", "").strip()
+    if content == "":
+        con.close()
+        return redirect(url_for("edit_data", id=id))
+
+    cur.execute(
+        "INSERT INTO comments(financial_id, user_id, content) VALUES(?,?,?)",
+        (id, session["user_id"], content)
+    )
+    con.commit()
+    con.close()
+    return redirect(url_for("edit_data", id=id))
+
 
 @app.route("/edit_comment/<int:id>", methods=["POST"])
 def edit_comment(id):
-    con=connect();cur=con.cursor()
-    cur.execute("UPDATE comments SET content=? WHERE id=? AND user_id=?",
-                (request.form["content"],id,session["user_id"]))
-    cur.execute("SELECT financial_id FROM comments WHERE id=?", (id,))
-    fid=cur.fetchone()["financial_id"]
-    con.commit();con.close()
-    return redirect(url_for("edit_data",id=fid))
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    con = connect()
+    cur = con.cursor()
+
+    # まずコメントが本人のものか＆financial_idを取る
+    cur.execute("SELECT financial_id FROM comments WHERE id=? AND user_id=?", (id, session["user_id"]))
+    row = cur.fetchone()
+    if row is None:
+        con.close()
+        abort(404)
+
+    fid = _row_get(row, "financial_id", 0)
+
+    content = request.form.get("content", "").strip()
+    if content == "":
+        # 空にしたいなら許可/不許可を決める。ここでは削除ではなく戻す
+        con.close()
+        return redirect(url_for("edit_data", id=fid))
+
+    cur.execute("UPDATE comments SET content=? WHERE id=? AND user_id=?", (content, id, session["user_id"]))
+    con.commit()
+    con.close()
+    return redirect(url_for("edit_data", id=fid))
+
 
 @app.route("/delete_comment/<int:id>", methods=["POST"])
 def delete_comment(id):
-    con=connect();cur=con.cursor()
-    cur.execute("SELECT financial_id FROM comments WHERE id=?", (id,))
-    fid=cur.fetchone()["financial_id"]
-    cur.execute("DELETE FROM comments WHERE id=? AND user_id=?", (id,session["user_id"]))
-    con.commit();con.close()
-    return redirect(url_for("edit_data",id=fid))
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    con = connect()
+    cur = con.cursor()
+
+    cur.execute("SELECT financial_id FROM comments WHERE id=? AND user_id=?", (id, session["user_id"]))
+    row = cur.fetchone()
+    if row is None:
+        con.close()
+        abort(404)
+
+    fid = _row_get(row, "financial_id", 0)
+
+    cur.execute("DELETE FROM comments WHERE id=? AND user_id=?", (id, session["user_id"]))
+    con.commit()
+    con.close()
+    return redirect(url_for("edit_data", id=fid))
 
 # ---------------- Excel ----------------
 @app.route("/download_excel")

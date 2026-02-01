@@ -1,60 +1,139 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    {% include "header.html" %}
-    <meta charset="UTF-8">
-    <title>データ編集</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>データ編集</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
-<h1>財務データ編集</h1>
+  {% include "header.html" %}
 
-<form method="POST">
-<table class="edit-table">
-<tr><th>企業名</th><td><input name="company_name" value="{{ data[1] }}" required></td></tr>
-<tr><th>業種</th><td><input name="industry" value="{{ data[2] }}" required></td></tr>
-<tr><th>年度</th><td><input name="year" value="{{ data[3] }}" required></td></tr>
-<tr><th>売上高</th><td><input name="sales" value="{{ data[4] }}" required></td></tr>
-<tr><th>売上総利益</th><td><input name="gross_profit" value="{{ data[5] }}" required></td></tr>
-<tr><th>当期純利益</th><td><input name="net_income" value="{{ data[6] }}" required></td></tr>
-<tr><th>総資産</th><td><input name="total_assets" value="{{ data[7] }}" required></td></tr>
-<tr><th>自己資本</th><td><input name="equity" value="{{ data[8] }}" required></td></tr>
-<tr><th>流動資産</th><td><input name="current_assets" value="{{ data[9] }}" required></td></tr>
-<tr><th>流動負債</th><td><input name="current_liabilities" value="{{ data[10] }}" required></td></tr>
-<tr><th>総負債</th><td><input name="liabilities" value="{{ data[11] }}" required></td></tr>
-<tr><th>従業員数</th><td><input name="employees" value="{{ data[12] }}" required></td></tr>
-</table>
-<button type="submit">更新</button>
-</form>
+  <div class="container">
+    <h1>財務データ編集</h1>
 
-<hr>
+    <!-- 財務データ更新 -->
+    <form method="POST" class="card">
+      <div class="edit-grid">
+        <div class="form-row">
+          <label>企業名</label>
+          <input name="company_name" value="{{ data[1] }}" required>
+        </div>
 
-<h2>コメント</h2>
+        <div class="form-row">
+          <label>業種</label>
+          <input name="industry" value="{{ data[2] }}" required>
+        </div>
 
-<form method="POST" action="{{ url_for('add_comment', id=data[0]) }}">
-<textarea name="content" placeholder="新しいコメントを入力" required></textarea>
-<button>追加</button>
-</form>
+        <div class="form-row">
+          <label>年度</label>
+          <input name="year" value="{{ data[3] }}" required>
+        </div>
 
-{% if comments %}
-    {% for c in comments %}
-    <div class="comment-box">
-        <form method="POST" action="{{ url_for('edit_comment', id=c[0]) }}">
-            <textarea name="content">{{ c[3] }}</textarea>
-            <button>保存</button>
-        </form>
+        <div class="form-row">
+          <label>売上高</label>
+          <input name="sales" value="{{ data[4] }}" class="number-input" required>
+        </div>
 
-        <form method="POST" action="{{ url_for('delete_comment', id=c[0]) }}">
-            <button class="danger">削除</button>
-        </form>
-    </div>
-    {% endfor %}
-{% else %}
-    <p class="muted">コメントはまだありません。</p>
-{% endif %}
+        <div class="form-row">
+          <label>売上総利益</label>
+          <input name="gross_profit" value="{{ data[5] }}" class="number-input" required>
+        </div>
+
+        <div class="form-row">
+          <label>当期純利益</label>
+          <input name="net_income" value="{{ data[6] }}" class="number-input" required>
+        </div>
+
+        <div class="form-row">
+          <label>総資産</label>
+          <input name="total_assets" value="{{ data[7] }}" class="number-input" required>
+        </div>
+
+        <div class="form-row">
+          <label>自己資本</label>
+          <input name="equity" value="{{ data[8] }}" class="number-input" required>
+        </div>
+
+        <div class="form-row">
+          <label>流動資産</label>
+          <input name="current_assets" value="{{ data[9] }}" class="number-input" required>
+        </div>
+
+        <div class="form-row">
+          <label>流動負債</label>
+          <input name="current_liabilities" value="{{ data[10] }}" class="number-input" required>
+        </div>
+
+        <div class="form-row">
+          <label>総負債</label>
+          <input name="liabilities" value="{{ data[11] }}" class="number-input" required>
+        </div>
+
+        <div class="form-row">
+          <label>従業員数</label>
+          <input name="employees" value="{{ data[12] }}" type="number" min="0" step="1" required>
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <button type="submit" class="btn btn-primary">更新</button>
+        <a class="btn" href="{{ url_for('view_data') }}">一覧へ戻る</a>
+      </div>
+    </form>
+
+    <h2 class="section">コメント</h2>
+
+    <!-- コメント追加（財務更新フォームとは別actionにするのが安全） -->
+    <form method="POST" action="{{ url_for('add_comment', id=data[0]) }}" class="card">
+      <div class="form-row">
+        <label>新しいコメント</label>
+        <textarea name="content" placeholder="新しいコメントを入力" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">追加</button>
+    </form>
+
+    {% if comments %}
+      {% for c in comments %}
+        <div class="comment-box">
+          <!-- コメント編集 -->
+          <form method="POST" action="{{ url_for('edit_comment', id=c[0]) }}">
+            <div class="form-row">
+              <label>コメント編集</label>
+              <textarea name="content" required>{{ c[3] }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">保存</button>
+          </form>
+
+          <!-- コメント削除 -->
+          <form method="POST" action="{{ url_for('delete_comment', id=c[0]) }}" class="mt-8">
+            <button type="submit" class="btn btn-danger">削除</button>
+          </form>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted">コメントはまだありません。</p>
+    {% endif %}
+  </div>
+
+<script>
+/* indexと同じ：数値カンマ表示（編集画面でも統一） */
+document.querySelectorAll(".number-input").forEach(i=>{
+  i.addEventListener("input",()=>{
+    const v=i.value.replace(/,/g,'');
+    if(!isNaN(v)&&v!=="") i.value=Number(v).toLocaleString();
+  });
+});
+/* 送信前にカンマ除去 */
+document.querySelector("form.card")?.addEventListener("submit",()=>{
+  document.querySelectorAll(".number-input").forEach(i=>{
+    i.value=i.value.replace(/,/g,'');
+  });
+});
+</script>
 
 </body>
 </html>

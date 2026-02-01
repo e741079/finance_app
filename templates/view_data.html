@@ -1,115 +1,120 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    {% include "header.html" %}
-    <meta charset="UTF-8">
-    <title>財務データ一覧</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>財務データ一覧</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        table { border-collapse: collapse; width: 100%; }
-        th, td { padding: 6px; border: 1px solid #ccc; text-align: center; }
-        th { background: #f2f2f2; cursor: pointer; }
-        .profit { background:#e8f5e9; }
-        .stable { background:#e3f2fd; }
-        .produce{ background:#fff3e0; }
-        .good{color:green;font-weight:bold;}
-        .warn{color:orange;font-weight:bold;}
-        .bad{color:red;font-weight:bold;}
-        .comment-view{font-size:12px;margin:2px 0;}
-        .muted{color:#888;font-size:12px;}
-    </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
-<h1>財務データ一覧</h1>
+  {% include "header.html" %}
 
-<form method="get">
-    企業名 <input name="company_name" value="{{ company_name }}">
-    業種 <input name="industry" value="{{ industry }}">
-    <button>検索</button>
-    <a href="{{ url_for('download_excel') }}">Excel出力</a>
-    <a href="{{ url_for('graph_view') }}" class="graph-btn">📊 グラフで比較</a>
+  <div class="container">
+    <h1>財務データ一覧</h1>
 
-</form>
+    <!-- 検索＆操作 -->
+    <form method="get" class="card">
+      <div class="filter-grid">
+        <div class="form-row">
+          <label>企業名</label>
+          <input name="company_name" value="{{ company_name }}">
+        </div>
+        <div class="form-row">
+          <label>業種</label>
+          <input name="industry" value="{{ industry }}">
+        </div>
+      </div>
 
-<div style="overflow-x:auto;">
-<table id="financialTable">
-<thead>
-<tr>
-<th>企業名</th><th>業種</th><th>年度</th><th>売上高</th><th>売上総利益</th><th>当期純利益</th>
-<th>売上総利益率</th><th>ROE</th><th>総資産</th><th>自己資本</th><th>流動資産</th>
-<th>流動負債</th><th>総負債</th><th>流動比率</th><th>負債比率</th><th>従業員数</th>
-<th>一人あたり売上高</th><th>労働生産性</th><th>編集</th><th>コメント</th>
-</tr>
-</thead>
+      <div class="actions-row">
+        <button type="submit" class="btn btn-primary">検索</button>
+        <a class="btn" href="{{ url_for('download_excel') }}">Excel出力</a>
+        <a class="btn" href="{{ url_for('graph_view') }}">📊 グラフで比較</a>
+      </div>
+    </form>
 
-<tbody>
-{% for row in financial_data %}
-<tr>
-<td>{{ row[1] }}</td><td>{{ row[2] }}</td><td>{{ row[3] }}</td>
-<td>{{ "{:,}".format(row[4]|int) }}</td>
-<td class="profit">{{ "{:,}".format(row[5]|int) }}</td>
-<td class="profit">{{ "{:,}".format(row[6]|int) }}</td>
-<td class="profit">{{ "%.2f"|format(row[13]*100) }}%</td>
-<td class="profit">{{ "%.2f"|format(row[14]*100) }}%</td>
-<td class="stable">{{ "{:,}".format(row[7]|int) }}</td>
-<td class="stable">{{ "{:,}".format(row[8]|int) }}</td>
-<td class="stable">{{ "{:,}".format(row[9]|int) }}</td>
-<td class="stable">{{ "{:,}".format(row[10]|int) }}</td>
-<td class="stable">{{ "{:,}".format(row[11]|int) }}</td>
+    <!-- テーブル -->
+    <div class="table-wrap">
+      <table id="financialTable">
+        <thead>
+          <tr>
+            <th>企業名</th><th>業種</th><th>年度</th><th>売上高</th><th>売上総利益</th><th>当期純利益</th>
+            <th>売上総利益率</th><th>ROE</th><th>総資産</th><th>自己資本</th><th>流動資産</th>
+            <th>流動負債</th><th>総負債</th><th>流動比率</th><th>負債比率</th><th>従業員数</th>
+            <th>一人あたり売上高</th><th>労働生産性</th><th>編集</th><th>コメント</th>
+          </tr>
+        </thead>
 
-<td class="stable">
-{% set r=row[15]*100 %}
-{% if r>=120 %}<span class="good">●</span>{% elif r>=100 %}<span class="warn">●</span>{% else %}<span class="bad">●</span>{% endif %}
-{{ "%.2f"|format(r) }}%
-</td>
+        <tbody>
+        {% for row in financial_data %}
+          <tr>
+            <td>{{ row[1] }}</td><td>{{ row[2] }}</td><td>{{ row[3] }}</td>
 
-<td class="stable">
-{% set r=row[16]*100 %}
-{% if r>=120 %}<span class="good">●</span>{% elif r>=100 %}<span class="warn">●</span>{% else %}<span class="bad">●</span>{% endif %}
-{{ "%.2f"|format(r) }}%
-</td>
+            <td>{{ "{:,}".format(row[4]|int) }}</td>
 
-<td>{{ "{:,}".format(row[12]|int) }}</td>
-<td class="produce">{{ "{:,}".format(row[17]|int) }}</td>
-<td class="produce">{{ "{:,}".format(row[18]|int) }}</td>
+            <td class="profit">{{ "{:,}".format(row[5]|int) }}</td>
+            <td class="profit">{{ "{:,}".format(row[6]|int) }}</td>
+            <td class="profit">{{ "%.2f"|format(row[13]*100) }}%</td>
+            <td class="profit">{{ "%.2f"|format(row[14]*100) }}%</td>
 
-<td><a href="{{ url_for('edit_data', id=row[0]) }}">編集</a></td>
+            <td class="stable">{{ "{:,}".format(row[7]|int) }}</td>
+            <td class="stable">{{ "{:,}".format(row[8]|int) }}</td>
+            <td class="stable">{{ "{:,}".format(row[9]|int) }}</td>
+            <td class="stable">{{ "{:,}".format(row[10]|int) }}</td>
+            <td class="stable">{{ "{:,}".format(row[11]|int) }}</td>
 
-<td>
-{% if comments_by_id and row[0] in comments_by_id %}
-    {% for c in comments_by_id[row[0]] %}
-        <div class="comment-view">{{ c[3] }}</div>
-    {% endfor %}
-{% else %}
-    <span class="muted">なし</span>
-{% endif %}
-</td>
-</tr>
-{% endfor %}
-</tbody>
-</table>
-</div>
+            <td class="stable">
+              {% set r=row[15]*100 %}
+              {% if r>=120 %}<span class="good">●</span>{% elif r>=100 %}<span class="warn">●</span>{% else %}<span class="bad">●</span>{% endif %}
+              {{ "%.2f"|format(r) }}%
+            </td>
+
+            <td class="stable">
+              {% set r=row[16]*100 %}
+              {% if r>=120 %}<span class="good">●</span>{% elif r>=100 %}<span class="warn">●</span>{% else %}<span class="bad">●</span>{% endif %}
+              {{ "%.2f"|format(r) }}%
+            </td>
+
+            <td>{{ "{:,}".format(row[12]|int) }}</td>
+            <td class="produce">{{ "{:,}".format(row[17]|int) }}</td>
+            <td class="produce">{{ "{:,}".format(row[18]|int) }}</td>
+
+            <td><a class="link" href="{{ url_for('edit_data', id=row[0]) }}">編集</a></td>
+
+            <td class="comments-cell">
+              {% if comments_by_id and row[0] in comments_by_id %}
+                {% for c in comments_by_id[row[0]] %}
+                  <div class="comment-view">{{ c[3] }}</div>
+                {% endfor %}
+              {% else %}
+                <span class="muted">なし</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
 <script>
 document.querySelectorAll("#financialTable th").forEach((th,i)=>{
- th.onclick=()=>sortTable(i);
+  th.onclick=()=>sortTable(i);
 });
 let dir={};
 function sortTable(i){
- const tb=document.querySelector("tbody");
- const rows=[...tb.rows];
- dir[i]=dir[i]==="asc"?"desc":"asc";
- rows.sort((a,b)=>{
-  let x=a.cells[i].innerText.replace(/,/g,'').replace('%','');
-  let y=b.cells[i].innerText.replace(/,/g,'').replace('%','');
-  x=parseFloat(x)||x; y=parseFloat(y)||y;
-  return (x<y?-1:1)*(dir[i]==="asc"?1:-1);
- });
- rows.forEach(r=>tb.appendChild(r));
+  const tb=document.querySelector("#financialTable tbody");
+  const rows=[...tb.rows];
+  dir[i]=dir[i]==="asc"?"desc":"asc";
+  rows.sort((a,b)=>{
+    let x=a.cells[i].innerText.replace(/,/g,'').replace('%','');
+    let y=b.cells[i].innerText.replace(/,/g,'').replace('%','');
+    x=parseFloat(x)||x; y=parseFloat(y)||y;
+    return (x<y?-1:1)*(dir[i]==="asc"?1:-1);
+  });
+  rows.forEach(r=>tb.appendChild(r));
 }
 </script>
 

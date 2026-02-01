@@ -1,30 +1,32 @@
 <header class="app-header">
-    <div class="nav-left">
-        <a href="{{ url_for('index') }}">データ入力</a>
-        <a href="{{ url_for('view_data') }}">データ一覧</a>
-    </div>
+  <nav class="nav-left">
+    <a href="{{ url_for('index') }}">データ入力</a>
+    <a href="{{ url_for('view_data') }}">データ一覧</a>
+  </nav>
 
-    <div class="nav-right">
-        {% if session.get("user_id") %}
-            <span class="user-name">{{ session.get("user_id") }} さん</span>
-            <a class="logout" href="{{ url_for('logout') }}">ログアウト</a>
-        {% else %}
-            <a href="{{ url_for('login') }}">ログイン</a>
-        {% endif %}
-    </div>
+  <div class="nav-right">
+    {% if session.get("user_id") %}
+      <span class="user-name">
+        {{ session.get("username") or session.get("user_id") }} さん
+      </span>
+      <a class="btn logout" href="{{ url_for('logout') }}">ログアウト</a>
+    {% else %}
+      <a class="btn" href="{{ url_for('login') }}">ログイン</a>
+    {% endif %}
+  </div>
 </header>
-<hr>
 
 <script>
 fetch("/industry_list")
- .then(r=>r.json())
- .then(list=>{
-   const dl=document.getElementById("industryList");
-   if(!dl) return;
-   list.forEach(v=>{
-     const o=document.createElement("option");
-     o.value=v;
-     dl.appendChild(o);
-   });
- });
+  .then(r => r.json())
+  .then(list => {
+    const dl = document.getElementById("industryList");
+    if (!dl) return;
+    dl.innerHTML = "";
+    list.forEach(v => {
+      const o = document.createElement("option");
+      o.value = v;
+      dl.appendChild(o);
+    });
+  });
 </script>

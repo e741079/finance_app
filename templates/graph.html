@@ -1,88 +1,115 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>財務データグラフ</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-body{font-family:"Noto Sans JP";background:#f7f7f7;padding:30px;}
-.card{background:#fff;padding:20px;border-radius:12px;box-shadow:0 5px 15px rgba(0,0,0,.1);}
-select{padding:6px 12px;border-radius:6px;}
-canvas{max-width:100%;}
-</style>
+  <meta charset="UTF-8">
+  <title>財務データグラフ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-<h2>財務データ可視化</h2>
+  {% include "header.html" %}
 
-<div class="card">
-企業：
-<select id="companySelect"></select>
+  <div class="container">
+    <h2>財務データ可視化</h2>
 
-指標：
-<select id="metricSelect">
-<option value="sales">売上高</option>
-<option value="roe">ROE</option>
-<option value="productivity">労働生産性</option>
-</select>
+    <div class="card">
+      <div class="filter-grid">
+        <div class="form-row">
+          <label>企業</label>
+          <select id="companySelect"></select>
+        </div>
 
-<canvas id="chart"></canvas>
-</div>
+        <div class="form-row">
+          <label>指標</label>
+          <select id="metricSelect">
+            <option value="sales">売上高</option>
+            <option value="roe">ROE</option>
+            <option value="productivity">労働生産性</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- グラフ背景（真っ白回避） -->
+      <div class="chart-card">
+        <canvas id="chart"></canvas>
+      </div>
+    </div>
+  </div>
 
 <script>
 const raw = {{ rows|tojson }};
 
 // 年度を数値に変換
 raw.forEach(r=>{
- r.year = Number(r.year);
- r.sales = Number(r.sales);
- r.roe = Number(r.roe);
- r.productivity = Number(r.productivity);
+  r.year = Number(r.year);
+  r.sales = Number(r.sales);
+  r.roe = Number(r.roe);
+  r.productivity = Number(r.productivity);
 });
 
 // 企業一覧
 const companies=[...new Set(raw.map(r=>r.company_name))];
 const companySel=document.getElementById("companySelect");
 companies.forEach(c=>{
- let o=document.createElement("option");
- o.value=o.textContent=c;
- companySel.appendChild(o);
+  const o=document.createElement("option");
+  o.value=o.textContent=c;
+  companySel.appendChild(o);
 });
 
 let chart;
 
+function metricLabel(metric){
+  if(metric==="sales") return "売上高";
+  if(metric==="roe") return "ROE";
+  if(metric==="productivity") return "労働生産性";
+  return metric;
+}
+
 function draw(){
- const company=companySel.value;
- const metric=document.getElementById("metricSelect").value;
+  const company=companySel.value;
+  const metric=document.getElementById("metricSelect").value;
 
- // 企業で抽出 → 年度順に並び替え
- const data=raw
-   .filter(r=>r.company_name===company)
-   .sort((a,b)=>a.year-b.year);
+  // 企業で抽出 → 年度順に並び替え
+  const data=raw
+    .filter(r=>r.company_name===company)
+    .sort((a,b)=>a.year-b.year);
 
- const labels=data.map(r=>r.year);
- const values=data.map(r=>r[metric]);
+  const labels=data.map(r=>r.year);
+  const values=data.map(r=>r[metric]);
 
- if(chart) chart.destroy();
- chart=new Chart(document.getElementById("chart"),{
-  type:"bar",
-  data:{
-    labels:labels,
-    datasets:[{
-      label: metric,
-      data: values
-    }]
-  },
-  options:{
-    responsive:true,
-    scales:{ y:{ beginAtZero:true } }
-  }
- });
+  if(chart) chart.destroy();
+  chart=new Chart(document.getElementById("chart"),{
+    type:"bar",
+    data:{
+      labels:labels,
+      datasets:[{
+        label: metricLabel(metric),
+        data: values
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio: false,
+      scales:{ y:{ beginAtZero:true } }
+    }
+  });
 }
 
 companySel.onchange=draw;
 document.getElementById("metricSelect").onchange=draw;
+
+// 初期選択
+if (companies.length > 0) {
+  companySel.value = companies[0];
+}
 draw();
 </script>
+
 </body>
 </html>
+
