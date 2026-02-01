@@ -4,11 +4,12 @@
   <meta charset="UTF-8">
   <title>財務データ入力</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  {% include "header.html" %}
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
+
+{% include "header.html" %}
 
 <div class="container">
   <h1>財務データ入力</h1>
@@ -34,11 +35,6 @@
         <datalist id="industryList"></datalist>
       </div>
 
-      <div id="other_industry_input" class="form-row" style="display:none;">
-        <label>その他の業種</label>
-        <input name="other_industry">
-      </div>
-
       <div class="form-row">
         <label>年度</label>
         <select name="year" required>
@@ -50,7 +46,7 @@
 
       <div class="form-row">
         <label>入力単位</label>
-        <select name="unit">
+        <select name="unit" required>
           <option value="1">円</option>
           <option value="1000">千円</option>
           <option value="1000000">百万円</option>
@@ -95,24 +91,31 @@
 
 <script>
 document.addEventListener("DOMContentLoaded",()=>{
+
+  // 企業名候補（/get_companies が必要）
   const input=document.getElementById("company_name");
   const list=document.getElementById("company_suggestions");
 
   input.addEventListener("input",()=>{
-    fetch(`/get_companies?query=${encodeURIComponent(input.value)}`)
-      .then(r=>r.json()).then(data=>{
+    const q = input.value.trim();
+    fetch(`/get_companies?query=${encodeURIComponent(q)}`)
+      .then(r=>r.json())
+      .then(data=>{
         list.innerHTML="";
-        data.forEach(c=>{
+        (data||[]).forEach(c=>{
           const o=document.createElement("option");
-          o.value=c; list.appendChild(o);
+          o.value=c;
+          list.appendChild(o);
         });
-      });
+      })
+      .catch(()=>{ /* 失敗時は何もしない */ });
   });
 
+  // 3桁カンマ
   document.querySelectorAll(".number-input").forEach(i=>{
     i.addEventListener("input",()=>{
       const v=i.value.replace(/,/g,'');
-      if(!isNaN(v)&&v!=="") i.value=Number(v).toLocaleString();
+      if(!isNaN(v) && v!=="") i.value=Number(v).toLocaleString();
     });
   });
 });

@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  {% include "header.html" %}
   <meta charset="UTF-8">
   <title>財務データ一覧</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,59 +9,41 @@
 </head>
 <body>
 
-<div class="container">
-  <h1>財務データ一覧</h1>
+{% include "header.html" %}
 
-  <div class="section-box">
-    <form method="get">
-      <div class="form-row">
+<div class="container">
+  <h1>財務データ一覧（円）</h1>
+
+  <form method="get" class="card" style="margin-top:12px;">
+    <div class="filter-grid">
+      <div class="form-row" style="margin-bottom: 18px;">
         <label>企業名</label>
         <input name="company_name" value="{{ company_name }}">
       </div>
-
-      <div class="form-row">
+      <div class="form-row" style="margin-bottom: 18px;">
         <label>業種</label>
         <input name="industry" value="{{ industry }}">
       </div>
+    </div>
 
-      <div class="actions-row">
-        <button class="btn" type="submit">検索</button>
-        <a class="btn" href="{{ url_for('download_excel') }}">Excel出力</a>
-        <a class="btn" href="{{ url_for('graph_view') }}">📊 グラフで比較</a>
-      </div>
-    </form>
-  </div>
+    <div class="actions-row">
+      <button class="btn" type="submit">検索</button>
+      <a class="btn" href="{{ url_for('download_excel') }}">Excel出力</a>
+      <a class="btn" href="{{ url_for('graph_view') }}">📊 グラフで比較</a>
+    </div>
+  </form>
 
-  <div class="table-wrap">
+  <div class="table-wrap" style="margin-top:16px;">
     <table id="financialTable">
       <thead>
         <tr>
-          <th>企業名</th>
-          <th>業種</th>
-          <th>年度</th>
-
-          <th>売上高</th>
-          <th>売上総利益</th>
-          <th>当期純利益</th>
-
-          <th>売上総利益率</th>
-          <th>ROE</th>
-
-          <th>総資産</th>
-          <th>自己資本</th>
-          <th>流動資産</th>
-          <th>流動負債</th>
-          <th>総負債</th>
-
-          <th>流動比率</th>
-          <th>負債比率</th>
-
-          <th>従業員数</th>
-          <th>一人あたり売上高</th>
-          <th>労働生産性</th>
-
-          <th>編集</th>
-          <th>コメント</th>
+          <th>企業名</th><th>業種</th><th>年度</th>
+          <th>売上高</th><th>売上総利益</th><th>当期純利益</th>
+          <th>売上総利益率</th><th>ROE</th>
+          <th>総資産</th><th>自己資本</th><th>流動資産</th><th>流動負債</th><th>総負債</th>
+          <th>流動比率</th><th>負債比率</th>
+          <th>従業員数</th><th>一人あたり売上高</th><th>労働生産性</th>
+          <th>編集</th><th>コメント</th>
         </tr>
       </thead>
 
@@ -98,11 +79,11 @@
             {{ "%.2f"|format(r) }}%
           </td>
 
-          <td class="produce">{{ "{:,}".format(row[12]|int) }}</td>
+          <td>{{ "{:,}".format(row[12]|int) }}</td>
           <td class="produce">{{ "{:,}".format(row[17]|int) }}</td>
           <td class="produce">{{ "{:,}".format(row[18]|int) }}</td>
 
-          <td><a class="btn" href="{{ url_for('edit_data', id=row[0]) }}">編集</a></td>
+          <td><a class="link" href="{{ url_for('edit_data', id=row[0]) }}">編集</a></td>
 
           <td class="comments-cell">
             {% if comments_by_id and row[0] in comments_by_id %}
@@ -132,7 +113,8 @@ function sortTable(i){
   rows.sort((a,b)=>{
     let x=a.cells[i].innerText.replace(/,/g,'').replace('%','');
     let y=b.cells[i].innerText.replace(/,/g,'').replace('%','');
-    x=parseFloat(x)||x; y=parseFloat(y)||y;
+    x=parseFloat(x)||x;
+    y=parseFloat(y)||y;
     return (x<y?-1:1)*(dir[i]==="asc"?1:-1);
   });
   rows.forEach(r=>tb.appendChild(r));

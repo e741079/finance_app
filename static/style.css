@@ -215,9 +215,9 @@ tbody tr:nth-child(even){
 .muted{ color:#6b7280; font-size:12px; }
 
 /* 評価 */
-.good{ color:#15803d; font-weight:800; }
-.warn{ color:#b45309; font-weight:800; }
-.bad{  color:#b42318; font-weight:800; }
+.good{ color: #16a34a; font-weight: 800; }  /* 緑（信号の青/緑） */
+.warn{ color: #f59e0b; font-weight: 800; }  /* 黄（信号の黄） */
+.bad{  color: #dc2626; font-weight: 800; }  /* 赤（信号の赤） */
 
 /* view_data: フィルタ余白 */
 form input[name="company_name"],

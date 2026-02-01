@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  {% include "header.html" %}
   <meta charset="UTF-8">
   <title>財務データグラフ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +8,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+
+{% include "header.html" %}
 
 <div class="container">
   <h2>財務データ可視化</h2>
@@ -53,44 +54,93 @@ raw.forEach(r=>{
   r.productivity = Number(r.productivity);
 });
 
-const companies=[...new Set(raw.map(r=>r.company_name))];
-const companySel=document.getElementById("companySelect");
+const companies = [...new Set(raw.map(r=>r.company_name))];
+const companySel = document.getElementById("companySelect");
+
 companies.forEach(c=>{
-  const o=document.createElement("option");
-  o.value=o.textContent=c;
+  const o = document.createElement("option");
+  o.value = c;
+  o.textContent = c;
   companySel.appendChild(o);
 });
 
 let chart;
 
 function draw(){
-  const company=companySel.value;
-  const metric=document.getElementById("metricSelect").value;
+  const company = companySel.value;
+  const metric = document.getElementById("metricSelect").value;
 
-  const data=raw
+  const data = raw
     .filter(r=>r.company_name===company)
     .sort((a,b)=>a.year-b.year);
 
-  const labels=data.map(r=>r.year);
-  const values=data.map(r=>r[metric]);
+  const labels = data.map(r=>r.year);
+
+  // 指標の表示ラベル
+  const metricLabelMap = {
+    sales: "売上高（円）",
+    roe: "ROE（%）",
+    productivity: "労働生産性（円）"
+  };
+
+  // 値の加工（ROEは%表示に合わせる）
+  const values = data.map(r=>{
+    if(metric==="roe") return r[metric] * 100;
+    return r[metric];
+  });
 
   if(chart) chart.destroy();
-  chart=new Chart(document.getElementById("chart"),{
-    type:"bar",
-    data:{
-      labels:labels,
-      datasets:[{ label: metric, data: values }]
+
+  chart = new Chart(document.getElementById("chart"),{
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: metricLabelMap[metric] || metric,
+        data: values
+      }]
     },
-    options:{
-      responsive:true,
-      scales:{ y:{ beginAtZero:true } }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(v){
+              if(metric==="roe") return v + "%";
+              // 金額系は3桁区切り
+              const n = Number(v);
+              if(Number.isFinite(n)) return n.toLocaleString();
+              return v;
+            }
+          }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(ctx){
+              const v = ctx.parsed.y;
+              if(metric==="roe") return (Number(v).toFixed(2)) + "%";
+              const n = Number(v);
+              return Number.isFinite(n) ? n.toLocaleString() + " 円" : String(v);
+            }
+          }
+        }
+      }
     }
   });
 }
 
-companySel.onchange=draw;
-document.getElementById("metricSelect").onchange=draw;
-draw();
+companySel.onchange = draw;
+document.getElementById("metricSelect").onchange = draw;
+
+// 初期選択（企業が0件のときは描画しない）
+if(companies.length){
+  companySel.value = companies[0];
+  draw();
+}
 </script>
 
 </body>

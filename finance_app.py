@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, send_file, jsonify, abort
 import sqlite3, os, io, pandas as pd
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -9,7 +9,9 @@ app.permanent_session_lifetime = timedelta(days=7)
 
 DB = "finance.db"
 
-# ---------------- DB ----------------
+# =========================
+# DB
+# =========================
 def connect():
     con = sqlite3.connect(DB)
     con.row_factory = sqlite3.Row
@@ -19,31 +21,100 @@ def init_db():
     con = connect()
     cur = con.cursor()
 
-    cur.execute("""CREATE TABLE IF NOT EXISTS users(
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS users(
         username TEXT PRIMARY KEY,
-        password TEXT)""")
+        password TEXT
+    )
+    """)
 
-    cur.execute("""CREATE TABLE IF NOT EXISTS financials(
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS financials(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        company_name TEXT, industry TEXT, year INTEGER,
-        sales REAL, gross_profit REAL, net_income REAL,
-        total_assets REAL, equity REAL,
-        current_assets REAL, current_liabilities REAL, liabilities REAL,
-        employees INTEGER,
-        gross_profit_margin REAL, roe REAL, current_ratio REAL, debt_ratio REAL,
-        sales_per_employee REAL, productivity REAL,
-        user_id TEXT)""")
+        company_name TEXT,
+        industry TEXT,
+        year INTEGER,
 
-    cur.execute("""CREATE TABLE IF NOT EXISTS comments(
+        sales REAL,
+        gross_profit REAL,
+        net_income REAL,
+
+        total_assets REAL,
+        equity REAL,
+        current_assets REAL,
+        current_liabilities REAL,
+        liabilities REAL,
+
+        employees INTEGER,
+
+        gross_profit_margin REAL,
+        roe REAL,
+        current_ratio REAL,
+        debt_ratio REAL,
+        sales_per_employee REAL,
+        productivity REAL,
+
+        user_id TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS comments(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         financial_id INTEGER,
         user_id TEXT,
         content TEXT,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
 
-    con.commit(); con.close()
+    con.commit()
+    con.close()
 
-# ---------------- Indicator calc ----------------
+# =========================
+# Helpers
+# =========================
+MONEY_FIELDS = [
+    "sales", "gross_profit", "net_income",
+    "total_assets", "equity",
+    "current_assets", "current_liabilities",
+    "liabilities"
+]
+
+def _to_float(v) -> float:
+    if v is None:
+        return 0.0
+    s = str(v).strip().replace(",", "").replace("，", "").replace(" ", "")
+    if s == "":
+        return 0.0
+    return float(s)
+
+def _to_int(v) -> int:
+    if v is None:
+        return 0
+    s = str(v).strip().replace(",", "").replace("，", "").replace(" ", "")
+    if s == "":
+        return 0
+    return int(float(s))  # "12.0" 対策
+
+def parse_financial_form_with_unit(form) -> dict:
+    """
+    入力単位(unit)を反映して、DB保存用「円」に統一したdictを返す
+    unit: 1(円) / 1000(千円) / 1000000(百万円)
+    """
+    unit = _to_float(form.get("unit", "1"))
+    if unit not in (1.0, 1000.0, 1000000.0):
+        unit = 1.0
+
+    d = {}
+    for k in MONEY_FIELDS:
+        d[k] = _to_float(form.get(k)) * unit  # ← unit反映（円換算）
+    d["employees"] = _to_int(form.get("employees"))
+    return d
+
+# =========================
+# Indicator calc
+# =========================
 def calc(d):
     return {
         "gross_profit_margin": d["gross_profit"]/d["sales"] if d["sales"] else 0,
@@ -54,28 +125,36 @@ def calc(d):
         "productivity": d["net_income"]/d["employees"] if d["employees"] else 0,
     }
 
-# ---------------- Auth ----------------
+# =========================
+# Auth
+# =========================
 @app.route("/register", methods=["GET","POST"])
 def register():
-    if request.method=="POST":
-        u,p = request.form["username"], request.form["password"]
-        con=connect();cur=con.cursor()
+    if request.method == "POST":
+        u, p = request.form["username"], request.form["password"]
+        con = connect()
+        cur = con.cursor()
         cur.execute("SELECT 1 FROM users WHERE username=?", (u,))
-        if cur.fetchone(): return "既に存在します"
-        cur.execute("INSERT INTO users VALUES(?,?)",(u,generate_password_hash(p)))
-        con.commit();con.close()
+        if cur.fetchone():
+            con.close()
+            return "既に存在します"
+        cur.execute("INSERT INTO users VALUES(?,?)", (u, generate_password_hash(p)))
+        con.commit()
+        con.close()
         return redirect(url_for("login"))
     return render_template("register.html")
 
 @app.route("/login", methods=["GET","POST"])
 def login():
-    if request.method=="POST":
-        u,p = request.form["username"], request.form["password"]
-        con=connect();cur=con.cursor()
+    if request.method == "POST":
+        u, p = request.form["username"], request.form["password"]
+        con = connect()
+        cur = con.cursor()
         cur.execute("SELECT * FROM users WHERE username=?", (u,))
-        user=cur.fetchone();con.close()
-        if user and check_password_hash(user["password"],p):
-            session["user_id"]=u
+        user = cur.fetchone()
+        con.close()
+        if user and check_password_hash(user["password"], p):
+            session["user_id"] = u
             return redirect(url_for("index"))
         return "ログイン失敗"
     return render_template("login.html")
@@ -85,98 +164,134 @@ def logout():
     session.clear()
     return redirect(url_for("login"))
 
-# ---------------- Main input ----------------
+# =========================
+# Main input
+# =========================
 @app.route("/", methods=["GET","POST"])
 def index():
-    if "user_id" not in session: return redirect(url_for("login"))
+    if "user_id" not in session:
+        return redirect(url_for("login"))
 
     current_year = datetime.now().year
 
-    if request.method=="POST":
-        f=request.form
-        d={k:float(f[k].replace(",","")) if k!="employees" else int(f[k]) for k in
-           ["sales","gross_profit","net_income","total_assets","equity",
-            "current_assets","current_liabilities","liabilities","employees"]}
+    if request.method == "POST":
+        f = request.form
 
-        d["company_name"]=f["company_name"]
-        d["industry"]=f["industry"]
-        d["year"]=int(f["year"])
+        # 1) unitを反映して円換算
+        d = parse_financial_form_with_unit(f)
+
+        # 2) 文字項目
+        company_name = f.get("company_name", "").strip()
+        industry = f.get("industry", "").strip()
+        year = _to_int(f.get("year"))
+
+        # 3) 指標計算
         d.update(calc(d))
-        d["user_id"]=session["user_id"]
 
-        con=connect();cur=con.cursor()
-        cur.execute("""INSERT INTO financials VALUES(null,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-        (d["company_name"],d["industry"],d["year"],d["sales"],d["gross_profit"],d["net_income"],
-         d["total_assets"],d["equity"],d["current_assets"],d["current_liabilities"],d["liabilities"],
-         d["employees"],d["gross_profit_margin"],d["roe"],d["current_ratio"],d["debt_ratio"],
-         d["sales_per_employee"],d["productivity"],d["user_id"]))
-        con.commit();con.close()
+        con = connect()
+        cur = con.cursor()
+        cur.execute(
+            """
+            INSERT INTO financials(
+                company_name, industry, year,
+                sales, gross_profit, net_income,
+                total_assets, equity, current_assets, current_liabilities, liabilities,
+                employees,
+                gross_profit_margin, roe, current_ratio, debt_ratio, sales_per_employee, productivity,
+                user_id
+            )
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """,
+            (
+                company_name, industry, year,
+                d["sales"], d["gross_profit"], d["net_income"],
+                d["total_assets"], d["equity"], d["current_assets"], d["current_liabilities"], d["liabilities"],
+                d["employees"],
+                d["gross_profit_margin"], d["roe"], d["current_ratio"], d["debt_ratio"],
+                d["sales_per_employee"], d["productivity"],
+                session["user_id"],
+            )
+        )
+        con.commit()
+        con.close()
         return redirect(url_for("view_data"))
 
     return render_template("index.html", current_year=current_year)
 
-# ---------------- list ----------------
+# =========================
+# Industry list (JSON)
+# =========================
 @app.route("/industry_list")
 def industry_list():
+    if "user_id" not in session:
+        return jsonify([])
+
     con = connect()
     cur = con.cursor()
-    cur.execute("SELECT DISTINCT industry FROM financials WHERE user_id=?", (session.get("user_id"),))
-    data=[r[0] for r in cur.fetchall()]
+    cur.execute(
+        "SELECT DISTINCT industry FROM financials WHERE user_id=? AND industry IS NOT NULL AND industry != ''",
+        (session["user_id"],)
+    )
+    data = [r[0] for r in cur.fetchall()]
     con.close()
-    return data
+    return jsonify(data)
 
-# ---------------- View ----------------
+# =========================
+# View
+# =========================
 @app.route("/view_data")
 def view_data():
-    if "user_id" not in session: return redirect(url_for("login"))
-    con=connect();cur=con.cursor()
+    if "user_id" not in session:
+        return redirect(url_for("login"))
 
-    cur.execute("SELECT * FROM financials WHERE user_id=?", (session["user_id"],))
-    financials=cur.fetchall()
+    company_name = request.args.get("company_name", "").strip()
+    industry = request.args.get("industry", "").strip()
 
+    con = connect()
+    cur = con.cursor()
+
+    # 動的WHERE条件
+    where = ["user_id = ?"]
+    params = [session["user_id"]]
+
+    if company_name:
+        where.append("company_name LIKE ?")
+        params.append(f"%{company_name}%")
+
+    if industry:
+        where.append("industry LIKE ?")
+        params.append(f"%{industry}%")
+
+    sql = f"""
+        SELECT * FROM financials
+        WHERE {' AND '.join(where)}
+        ORDER BY company_name, year
+    """
+
+    cur.execute(sql, params)
+    financials = cur.fetchall()
+
+    # コメント取得
     cur.execute("SELECT * FROM comments WHERE user_id=?", (session["user_id"],))
-    com=cur.fetchall(); con.close()
+    com = cur.fetchall()
+    con.close()
 
-    comments={}
+    comments = {}
     for c in com:
         comments.setdefault(c["financial_id"], []).append(c)
 
-    return render_template("view_data.html", financial_data=financials, comments_by_id=comments)
+    return render_template(
+        "view_data.html",
+        financial_data=financials,
+        comments_by_id=comments,
+        company_name=company_name,
+        industry=industry
+    )
 
-import re
-from flask import abort
-
-def _to_float(v: str) -> float:
-    # None対策＋全角カンマなども一応吸収
-    if v is None:
-        return 0.0
-    s = str(v).strip()
-    s = s.replace(",", "").replace("，", "").replace(" ", "")
-    if s == "":
-        return 0.0
-    return float(s)
-
-def _to_int(v: str) -> int:
-    if v is None:
-        return 0
-    s = str(v).strip()
-    s = s.replace(",", "").replace("，", "").replace(" ", "")
-    if s == "":
-        return 0
-    return int(float(s))  # "12.0" とか来ても落ちないように
-
-def _row_get(row, key, idx=None):
-    """sqlite3.Row でも tuple でも取り出せるようにする"""
-    if row is None:
-        return None
-    try:
-        return row[key]  # Rowならこれ
-    except Exception:
-        return row[idx] if idx is not None else None
-
-
-# ---------------- Edit ----------------
-@app.route("/edit/<int:id>", methods=["GET", "POST"])
+# =========================
+# Edit
+# =========================
+@app.route("/edit/<int:id>", methods=["GET","POST"])
 def edit_data(id):
     if "user_id" not in session:
         return redirect(url_for("login"))
@@ -184,7 +299,7 @@ def edit_data(id):
     con = connect()
     cur = con.cursor()
 
-    # 先に存在確認（他ユーザーのidを直叩きされた時も安全）
+    # 本人のデータか確認
     cur.execute("SELECT * FROM financials WHERE id=? AND user_id=?", (id, session["user_id"]))
     data = cur.fetchone()
     if data is None:
@@ -194,53 +309,52 @@ def edit_data(id):
     if request.method == "POST":
         f = request.form
 
-        d = {
-            "sales": _to_float(f.get("sales")),
-            "gross_profit": _to_float(f.get("gross_profit")),
-            "net_income": _to_float(f.get("net_income")),
-            "total_assets": _to_float(f.get("total_assets")),
-            "equity": _to_float(f.get("equity")),
-            "current_assets": _to_float(f.get("current_assets")),
-            "current_liabilities": _to_float(f.get("current_liabilities")),
-            "liabilities": _to_float(f.get("liabilities")),
-            "employees": _to_int(f.get("employees")),
-        }
+        d = {k: _to_float(f.get(k)) for k in MONEY_FIELDS}
+        d["employees"] = _to_int(f.get("employees"))
 
-        # year は数値に寄せたいなら int化（DBがTEXTでもOK）
-        year = f.get("year")
-        year = str(year).strip()
+        year = _to_int(f.get("year"))
+        company_name = f.get("company_name", "").strip()
+        industry = f.get("industry", "").strip()
 
         d.update(calc(d))
 
         cur.execute(
-            """UPDATE financials SET
-            company_name=?, industry=?, year=?,
-            sales=?, gross_profit=?, net_income=?,
-            total_assets=?, equity=?, current_assets=?, current_liabilities=?, liabilities=?, employees=?,
-            gross_profit_margin=?, roe=?, current_ratio=?, debt_ratio=?, sales_per_employee=?, productivity=?
-            WHERE id=? AND user_id=?""",
+            """
+            UPDATE financials SET
+                company_name=?, industry=?, year=?,
+                sales=?, gross_profit=?, net_income=?,
+                total_assets=?, equity=?, current_assets=?, current_liabilities=?, liabilities=?,
+                employees=?,
+                gross_profit_margin=?, roe=?, current_ratio=?, debt_ratio=?, sales_per_employee=?, productivity=?
+            WHERE id=? AND user_id=?
+            """,
             (
-                f.get("company_name"), f.get("industry"), year,
+                company_name, industry, year,
                 d["sales"], d["gross_profit"], d["net_income"],
                 d["total_assets"], d["equity"], d["current_assets"], d["current_liabilities"], d["liabilities"],
                 d["employees"],
                 d["gross_profit_margin"], d["roe"], d["current_ratio"], d["debt_ratio"],
                 d["sales_per_employee"], d["productivity"],
-                id, session["user_id"]
+                id, session["user_id"],
             )
         )
+
         con.commit()
         con.close()
         return redirect(url_for("edit_data", id=id))
 
-    # コメント取得
-    cur.execute("SELECT * FROM comments WHERE financial_id=? AND user_id=? ORDER BY id DESC", (id, session["user_id"]))
+    cur.execute(
+        "SELECT * FROM comments WHERE financial_id=? AND user_id=? ORDER BY id DESC",
+        (id, session["user_id"])
+    )
     comments = cur.fetchall()
     con.close()
+
     return render_template("edit_data.html", data=data, comments=comments)
 
-
-# ---------------- Comment ----------------
+# =========================
+# Comment
+# =========================
 @app.route("/add_comment/<int:id>", methods=["POST"])
 def add_comment(id):
     if "user_id" not in session:
@@ -249,7 +363,6 @@ def add_comment(id):
     con = connect()
     cur = con.cursor()
 
-    # そのfinancialが本人のものか確認（安全）
     cur.execute("SELECT id FROM financials WHERE id=? AND user_id=?", (id, session["user_id"]))
     if cur.fetchone() is None:
         con.close()
@@ -268,7 +381,6 @@ def add_comment(id):
     con.close()
     return redirect(url_for("edit_data", id=id))
 
-
 @app.route("/edit_comment/<int:id>", methods=["POST"])
 def edit_comment(id):
     if "user_id" not in session:
@@ -277,18 +389,16 @@ def edit_comment(id):
     con = connect()
     cur = con.cursor()
 
-    # まずコメントが本人のものか＆financial_idを取る
     cur.execute("SELECT financial_id FROM comments WHERE id=? AND user_id=?", (id, session["user_id"]))
     row = cur.fetchone()
     if row is None:
         con.close()
         abort(404)
 
-    fid = _row_get(row, "financial_id", 0)
+    fid = row["financial_id"]
 
     content = request.form.get("content", "").strip()
     if content == "":
-        # 空にしたいなら許可/不許可を決める。ここでは削除ではなく戻す
         con.close()
         return redirect(url_for("edit_data", id=fid))
 
@@ -296,7 +406,6 @@ def edit_comment(id):
     con.commit()
     con.close()
     return redirect(url_for("edit_data", id=fid))
-
 
 @app.route("/delete_comment/<int:id>", methods=["POST"])
 def delete_comment(id):
@@ -312,14 +421,16 @@ def delete_comment(id):
         con.close()
         abort(404)
 
-    fid = _row_get(row, "financial_id", 0)
+    fid = row["financial_id"]
 
     cur.execute("DELETE FROM comments WHERE id=? AND user_id=?", (id, session["user_id"]))
     con.commit()
     con.close()
     return redirect(url_for("edit_data", id=fid))
 
-# ---------------- Excel ----------------
+# =========================
+# Excel
+# =========================
 @app.route("/download_excel")
 def download_excel():
     if "user_id" not in session:
@@ -337,6 +448,7 @@ def download_excel():
               AND comments.user_id = ?
         WHERE f.user_id = ?
         GROUP BY f.id
+        ORDER BY f.company_name, f.year
     """, (session["user_id"], session["user_id"]))
 
     rows = cur.fetchall()
@@ -349,35 +461,54 @@ def download_excel():
     df.to_excel(out, index=False)
     out.seek(0)
 
-    return send_file(out,
-                     download_name="financial_data.xlsx",
-                     as_attachment=True)
+    return send_file(out, download_name="financial_data.xlsx", as_attachment=True)
 
-
-# ---------------- graph ----------------
-@app.route("/graph")
+# =========================
+# Graph
+# =========================
+@app.route("/graph_view")
 def graph_view():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
+    con = connect()
+    cur = con.cursor()
 
-    c.execute("""
+    cur.execute("""
         SELECT company_name, year, sales, roe, productivity
         FROM financials
         WHERE user_id=?
         ORDER BY company_name, year
     """, (session["user_id"],))
 
-    rows = [dict(r) for r in c.fetchall()]
-    conn.close()
+    rows = [dict(r) for r in cur.fetchall()]
+    con.close()
 
     return render_template("graph.html", rows=rows)
 
+@app.route("/get_companies")
+def get_companies():
+    if "user_id" not in session:
+        return jsonify([])
+
+    q = request.args.get("query", "").strip()
+    con = connect()
+    cur = con.cursor()
+    cur.execute("""
+        SELECT DISTINCT company_name
+        FROM financials
+        WHERE user_id=? AND company_name LIKE ?
+        ORDER BY company_name
+        LIMIT 10
+    """, (session["user_id"], f"%{q}%"))
+    rows = [r[0] for r in cur.fetchall()]
+    con.close()
+    return jsonify(rows)
 
 
-if __name__=="__main__":
+# =========================
+# Run
+# =========================
+if __name__ == "__main__":
     init_db()
     app.run(debug=True)
