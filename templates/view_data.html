@@ -58,8 +58,17 @@
           <td class="profit">{{ "{:,}".format(row[5]|int) }}</td>
           <td class="profit">{{ "{:,}".format(row[6]|int) }}</td>
 
-          <td class="profit">{{ "%.2f"|format(row[13]*100) }}%</td>
-          <td class="profit">{{ "%.2f"|format(row[14]*100) }}%</td>
+          <td class="profit">
+            {% set r = row[13] * 100 %}
+            {% if r >= 30 %}<span class="good">●</span>{% elif r >= 20 %}<span class="warn">●</span>{% else %}<span class="bad">●</span>{% endif %}
+            {{ "%.2f"|format(r) }}%
+          </td>
+
+          <td class="profit">
+            {% set r = row[14] * 100 %}
+            {% if r >= 10 %}<span class="good">●</span>{% elif r >= 5 %}<span class="warn">●</span>{% else %}<span class="bad">●</span>{% endif %}
+            {{ "%.2f"|format(r) }}%
+          </td>
 
           <td class="stable">{{ "{:,}".format(row[7]|int) }}</td>
           <td class="stable">{{ "{:,}".format(row[8]|int) }}</td>
@@ -74,8 +83,8 @@
           </td>
 
           <td class="stable">
-            {% set r=row[16]*100 %}
-            {% if r>=120 %}<span class="good">●</span>{% elif r>=100 %}<span class="warn">●</span>{% else %}<span class="bad">●</span>{% endif %}
+            {% set r = row[16] * 100 %}
+            {% if r < 60 %}<span class="good">●</span>{% elif r < 80 %}<span class="warn">●</span>{% else %}<span class="bad">●</span>{% endif %}
             {{ "%.2f"|format(r) }}%
           </td>
 
